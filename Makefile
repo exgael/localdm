@@ -22,3 +22,6 @@ typecheck:
 
 all: install format lint-fix typecheck
 
+build:
+	rm -rf dist && uv build
+

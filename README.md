@@ -2,28 +2,12 @@
 
 Type-safe data versioning library with lineage tracking using Polars.
 
-## Features
-
-- **Content-Addressed Storage**: Datasets are versioned using SHA-256 hashing
-- **Lineage Tracking**: Track parent-child relationships between datasets
-- **Type-Safe**: Full mypy strict mode compliance
-- **Polars-Powered**: Fast, memory-efficient data processing
-- **Git-Inspired Workflow**: Tag and reference datasets like git commits
-
 ## Installation
 
 ### From GitHub
 
 ```bash
-uv add git+https://github.com/YOUR_USERNAME/localdm.git
-```
-
-### Local Development
-
-```bash
-git clone https://github.com/YOUR_USERNAME/localdm.git
-cd localdm
-uv sync
+uv add git+https://github.com/exgael/localdm.git
 ```
 
 ## Quick Start
@@ -114,31 +98,6 @@ Datasets can be referenced by `name:tag` or `name@hash`:
 dm.get("users:v1")           # By tag
 dm.get("users@abc123...")    # By hash
 ```
-
-## Development
-
-### Requirements
-
-- Python 3.13+
-- uv package manager
-
-### Setup
-
-```bash
-make install    # Install dependencies
-make format     # Format code
-make lint-fix   # Fix linting issues
-make typecheck  # Run mypy
-make all        # Run all checks
-```
-
-### Type Safety
-
-This project uses strict mypy configuration:
-
-- All functions must have type annotations
-- No implicit `Any` types
-- Uses modern Python built-in types (`list`, `dict`, not `typing.List`, `typing.Dict`)
 
 ## License
 
