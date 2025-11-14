@@ -3,10 +3,7 @@ import json
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
-
-# Local imports
-from localdm.types import EngineType
+from typing import Any
 
 # -----------------------------
 # TypedDict definitions
@@ -22,7 +19,6 @@ class DatasetMetadata:
     tags: list[str]
     created_at: str
     parent_refs: list[str]
-    engine: EngineType
     transform_type: str | None
     transform_metadata: dict[str, object] | None
     schema: dict[str, str] | None
@@ -55,7 +51,6 @@ CREATE TABLE IF NOT EXISTS datasets (
     hash TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    engine TEXT NOT NULL,
     data_path TEXT NOT NULL,
     transform_type TEXT,
     transform_metadata_json TEXT,
@@ -116,15 +111,14 @@ def save_metadata(db_path: Path, metadata: DatasetMetadata) -> None:
         conn.execute(
             """
             INSERT OR REPLACE INTO datasets
-            (hash, name, created_at, engine, data_path, transform_type,
+            (hash, name, created_at, data_path, transform_type,
              transform_metadata_json, schema_json, stats_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 metadata.hash,
                 metadata.name,
                 metadata.created_at,
-                metadata.engine,
                 metadata.data_path,
                 metadata.transform_type,
                 json.dumps(metadata.transform_metadata)
@@ -168,7 +162,7 @@ def load_metadata(db_path: Path, hash_val: str) -> DatasetMetadata:
         # Load dataset
         cursor: sqlite3.Cursor = conn.execute(
             """
-            SELECT name, created_at, engine, data_path, transform_type,
+            SELECT name, created_at, data_path, transform_type,
                    transform_metadata_json, schema_json, stats_json
             FROM datasets
             WHERE hash = ?
@@ -184,7 +178,6 @@ def load_metadata(db_path: Path, hash_val: str) -> DatasetMetadata:
         (
             name,
             created_at,
-            engine,
             data_path,
             transform_type,
             transform_metadata_json,
@@ -222,7 +215,6 @@ def load_metadata(db_path: Path, hash_val: str) -> DatasetMetadata:
             tags=tags,
             created_at=created_at,
             parent_refs=parent_refs,
-            engine=cast("EngineType", engine),
             transform_type=transform_type,
             transform_metadata=json.loads(transform_metadata_json)
             if transform_metadata_json
@@ -264,9 +256,7 @@ def resolve_ref_to_hash(db_path: Path, ref: str) -> str:
             conn.close()
 
     msg = f"Invalid reference '{ref}'. Use 'name:tag' or 'name@hash' format."
-    raise ValueError(
-        msg
-    )
+    raise ValueError(msg)
 
 
 def _hash_to_ref(conn: sqlite3.Connection, hash_val: str) -> str:

@@ -13,12 +13,10 @@ from localdm.core.shared import (
     create_metadata,
     extract_schema,
     extract_transform_type,
-    load_file,
 )
 from localdm.core.storage import get_metadata_db_path, get_object_path, init_repo
 from localdm.datasets.dataset import Dataset
 from localdm.repositories.dataset_repository import DatasetRepository
-from localdm.types import EngineType
 
 # -----------------------------
 # Unified Data Manager
@@ -48,28 +46,6 @@ class DataManager:
     # Public methods
     # -----------------------------
 
-    def load(
-        self,
-        path: str | Path,
-        name: str,
-        tag: str | None = None,
-    ) -> Dataset:
-        """Load file and create versioned dataset."""
-        path_obj = Path(path)
-        data: pl.DataFrame = load_file(path_obj)
-
-        metadata: DatasetMetadata = self._save_dataset(
-            data=data,
-            name=name,
-            tag=tag,
-            parent_refs=[],
-            transform_type="load",
-            transform_metadata={"source": str(path)},
-            engine="polars",
-        )
-
-        return Dataset(metadata=metadata, _data_cache=data)
-
     def create_dataset(
         self,
         name: str,
@@ -96,10 +72,9 @@ class DataManager:
             parent_refs=parent_refs,
             transform_type=transform_type,
             transform_metadata=metadata,
-            engine="polars",
         )
 
-        return Dataset(metadata=dataset_metadata, _data_cache=data)
+        return Dataset(metadata=dataset_metadata, _data_cache=None)
 
     def get(self, ref: str) -> Dataset:
         """Get dataset by reference."""
@@ -121,7 +96,6 @@ class DataManager:
         parent_refs: list[str],
         transform_type: str | None,
         transform_metadata: dict[str, object] | None,
-        engine: EngineType,
     ) -> DatasetMetadata:
         """Save dataset to storage."""
         hash_val: str = compute_hash(data)
@@ -137,7 +111,6 @@ class DataManager:
             name=name,
             tags=[tag] if tag else [],
             parent_refs=parent_refs,
-            engine=engine,
             transform_type=transform_type,
             transform_metadata=transform_metadata,
             schema=schema,

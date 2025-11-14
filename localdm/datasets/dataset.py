@@ -47,29 +47,15 @@ class Dataset:
         return self.metadata.full_ref
 
     @property
-    def engine(self) -> str:
-        return self.metadata.engine
+    def df(self) -> pl.LazyFrame:
+        """Get LazyFrame - data not loaded until collect() is called."""
+        return pl.scan_parquet(Path(self.metadata.data_path))
 
-    @property
-    def df(self) -> pl.DataFrame:
-        """Get Polars DataFrame with lazy loading."""
-        if self._data_cache is None:
-            data: pl.DataFrame = pl.read_parquet(Path(self.metadata.data_path))
-            object.__setattr__(self, "_data_cache", data)
-
-        cache: None | pl.DataFrame = self._data_cache
-        assert cache is not None, "Cache must be set after load_parquet"
-        return cache
-
-    def get_parents(
-        self, repository: "DatasetRepository"
-    ) -> list["Dataset"]:
+    def get_parents(self, repository: "DatasetRepository") -> list["Dataset"]:
         """Load all parent Dataset objects via repository."""
         return [repository.get(ref) for ref in self.metadata.parent_refs]
 
-    def get_parent(
-        self, name: str, repository: "DatasetRepository"
-    ) -> "Dataset":
+    def get_parent(self, name: str, repository: "DatasetRepository") -> "Dataset":
         """Get specific parent by name via repository."""
         ref: str = get_parent_ref_by_name(self.metadata.parent_refs, name)
         return repository.get(ref)

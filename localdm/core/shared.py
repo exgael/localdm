@@ -1,16 +1,14 @@
 # Standard library
 import hashlib
-from datetime import datetime
+from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Literal
 
 # Third-party
 import polars as pl
 
 # Local imports
 from localdm.core.metadata import DatasetMetadata
-from localdm.types import EngineType
 
 # -----------------------------
 # Metadata utilities
@@ -22,7 +20,6 @@ def create_metadata(
     name: str,
     tags: list[str],
     parent_refs: list[str],
-    engine: EngineType,
     transform_type: str | None,
     transform_metadata: dict[str, object] | None,
     schema: dict[str, str],
@@ -34,9 +31,8 @@ def create_metadata(
         hash=hash_val,
         name=name,
         tags=tags,
-        created_at=datetime.now().isoformat(),
+        created_at=datetime.now(UTC).isoformat(),
         parent_refs=parent_refs,
-        engine=engine,
         transform_type=transform_type,
         transform_metadata=transform_metadata,
         schema=schema,
@@ -106,28 +102,11 @@ def _compute_heuristic_hash(df: pl.DataFrame) -> str:
     )
     components.append(f"schema:{schema}")
 
-    # Nulls
-    null_total: int = df.null_count().sum_horizontal().item()
-    components.append(f"nulls:{null_total}")
-
-    # Sample head/tail
+    # Sample head/tail (only 5 rows each - very cheap)
     head: str = df.head(5).write_csv()
     tail: str = df.tail(5).write_csv()
     components.append(f"head:{hashlib.sha256(head.encode()).hexdigest()[:8]}")
     components.append(f"tail:{hashlib.sha256(tail.encode()).hexdigest()[:8]}")
-
-    # Numeric checksum
-    numeric_cols: list[str] = [
-        col
-        for col, dtype in df.schema.items()
-        if dtype in {pl.Int32, pl.Int64, pl.Float32, pl.Float64}
-    ]
-    if numeric_cols:
-        total_row = df.select([pl.sum(col) for col in numeric_cols]).row(0)
-        checksum: float | Literal[0] = sum(
-            float(v) for v in total_row if v is not None
-        )
-        components.append(f"numeric_sum:{checksum}")
 
     combined = "|".join(components)
     return hashlib.sha256(combined.encode()).hexdigest()
@@ -156,5 +135,4 @@ def compute_stats(df: pl.DataFrame) -> dict[str, object]:
     return {
         "row_count": len(df),
         "column_count": len(df.columns),
-        "null_counts": {col: df[col].null_count() for col in df.columns},
     }

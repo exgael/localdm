@@ -53,7 +53,8 @@ ignore = [
     "ANN",  # type-annotation rules (strict type checking is handled by Pyright/Mypy)
     "COM",  # comma rule, too noisy
     "D",    # docstring rules; optional for many projects
-    "Q"     # quote normalization; unnecessary churn
+    "Q",    # quote normalization; unnecessary churn
+    "PLR0913",  # too many arguments in function definition
 ]
 
 [tool.mypy]
