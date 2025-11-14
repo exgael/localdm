@@ -18,6 +18,7 @@ class DatasetMetadata:
     name: str
     tags: list[str]
     created_at: str
+    author: str
     parent_refs: list[str]
     transform_type: str | None
     transform_metadata: dict[str, object] | None
@@ -51,6 +52,7 @@ CREATE TABLE IF NOT EXISTS datasets (
     hash TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     created_at TEXT NOT NULL,
+    author TEXT NOT NULL DEFAULT 'unknown',
     data_path TEXT NOT NULL,
     transform_type TEXT,
     transform_metadata_json TEXT,
@@ -111,14 +113,15 @@ def save_metadata(db_path: Path, metadata: DatasetMetadata) -> None:
         conn.execute(
             """
             INSERT OR REPLACE INTO datasets
-            (hash, name, created_at, data_path, transform_type,
+            (hash, name, created_at, author, data_path, transform_type,
              transform_metadata_json, schema_json, stats_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 metadata.hash,
                 metadata.name,
                 metadata.created_at,
+                metadata.author,
                 metadata.data_path,
                 metadata.transform_type,
                 json.dumps(metadata.transform_metadata)
@@ -162,7 +165,7 @@ def load_metadata(db_path: Path, hash_val: str) -> DatasetMetadata:
         # Load dataset
         cursor: sqlite3.Cursor = conn.execute(
             """
-            SELECT name, created_at, data_path, transform_type,
+            SELECT name, created_at, author, data_path, transform_type,
                    transform_metadata_json, schema_json, stats_json
             FROM datasets
             WHERE hash = ?
@@ -178,6 +181,7 @@ def load_metadata(db_path: Path, hash_val: str) -> DatasetMetadata:
         (
             name,
             created_at,
+            author,
             data_path,
             transform_type,
             transform_metadata_json,
@@ -214,6 +218,7 @@ def load_metadata(db_path: Path, hash_val: str) -> DatasetMetadata:
             name=name,
             tags=tags,
             created_at=created_at,
+            author=author,
             parent_refs=parent_refs,
             transform_type=transform_type,
             transform_metadata=json.loads(transform_metadata_json)

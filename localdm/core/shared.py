@@ -1,5 +1,7 @@
 # Standard library
+import getpass
 import hashlib
+import os
 from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
@@ -15,11 +17,21 @@ from localdm.core.metadata import DatasetMetadata
 # -----------------------------
 
 
+def get_current_username() -> str:
+    """Get current username in a cross-platform manner."""
+    try:
+        return getpass.getuser()
+    except OSError:
+        username: str | None = os.environ.get("USER") or os.environ.get("USERNAME")
+        return username if username else "unknown"
+
+
 def create_metadata(
     hash_val: str,
     name: str,
     tags: list[str],
     parent_refs: list[str],
+    author: str,
     transform_type: str | None,
     transform_metadata: dict[str, object] | None,
     schema: dict[str, str],
@@ -32,6 +44,7 @@ def create_metadata(
         name=name,
         tags=tags,
         created_at=datetime.now(UTC).isoformat(),
+        author=author,
         parent_refs=parent_refs,
         transform_type=transform_type,
         transform_metadata=transform_metadata,

@@ -19,6 +19,7 @@ classifiers = [
 dependencies = [
     "polars>=1.0.0",
     "pyarrow>=17.0.0",
+    "rich>=13.0.0",
 ]
 
 [project.urls]
@@ -55,6 +56,7 @@ ignore = [
     "D",    # docstring rules; optional for many projects
     "Q",    # quote normalization; unnecessary churn
     "PLR0913",  # too many arguments in function definition
+    "PLC0415",  # import not at top-level (intentional for optional deps like rich)
 ]
 
 [tool.mypy]

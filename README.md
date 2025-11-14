@@ -22,7 +22,7 @@ dm = DataManager(repo_path="./.localdm")
 # Load data yourself with Polars
 users_df = pl.read_csv("users.csv")
 
-# Create a versioned dataset
+# Create a versioned dataset (author auto-detected)
 users = dm.create_dataset(
     name="users",
     data=users_df,
@@ -49,6 +49,12 @@ users_v1 = dm.get("users:v1")
 # Access data lazily - only loads when you call .collect()
 lazy_df = users_v1.df
 materialized = lazy_df.collect()
+
+# Discovery & visualization (with rich formatting)
+dm.show_datasets()              # Pretty table of all datasets
+dm.describe("users:v1")         # Detailed panel view
+dm.visualize_lineage("adults:v1")  # Tree view of dependencies
+users.info()                    # Dataset overview
 ```
 
 ## Core Concepts
@@ -61,8 +67,13 @@ Central manager for creating and retrieving versioned datasets.
 dm = DataManager(repo_path="./.localdm")
 ```
 
-**Key Method:**
-- `create_dataset(name, data, tag=None, parents=None, metadata=None)` - Version a Polars DataFrame
+**Key Methods:**
+- `create_dataset(name, data, tag=None, parents=None, metadata=None, author=None)` - Version a Polars DataFrame
+- `get(ref)` - Retrieve dataset by reference
+- `list_datasets(name_filter=None, limit=None)` - List datasets programmatically
+- `show_datasets(name_filter=None)` - Display datasets in a rich table
+- `describe(ref)` - Show detailed info panel for a dataset
+- `visualize_lineage(ref, max_depth=5)` - Display parent dependency tree
 
 ### Dataset
 
@@ -77,12 +88,10 @@ result = dataset.df.filter(...).select(...).collect()
 
 # Or load everything at once
 df = dataset.df.collect()
-```
 
-**Memory Efficiency:**
-- `Dataset.df` returns a `LazyFrame` - no data loaded until `.collect()`
-- Datasets don't cache data internally
-- You control when data materializes
+# Display information
+dataset.info()  # Rich formatted overview with schema
+```
 
 ### Lineage Tracking
 
@@ -96,6 +105,9 @@ derived = dm.create_dataset(
     parents=[dataset1, dataset2],
     metadata={"transform": "join"}
 )
+
+# Visualize lineage tree
+dm.visualize_lineage("derived:v1")
 
 # Get specific parent
 parent = dataset.get_parent("parent_name", dm.repository)
@@ -113,13 +125,27 @@ dm.get("users:v1")           # By tag
 dm.get("users@abc123...")    # By hash (first 7 chars)
 ```
 
-## Philosophy
+### Discovery & Inspection
 
-**localdm is a middleman between you and Polars:**
-- You manage your DataFrames
-- localdm manages versions, hashes, and lineage
-- Lazy loading by default for memory efficiency
-- Fast approximate hashing (schema + dimensions + samples)
+Browse and inspect datasets with rich formatting:
+
+```python
+# List all datasets
+datasets = dm.list_datasets()
+filtered = dm.list_datasets(name_filter="user", limit=10)
+
+# Pretty table view
+dm.show_datasets()
+
+# Detailed panel view
+dm.describe("users:v1")
+
+# Dataset overview
+dataset.info()
+
+# Lineage tree
+dm.visualize_lineage("derived:v2")
+```
 
 ## License
 
