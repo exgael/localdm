@@ -1,75 +1,20 @@
 # Standard library
-import getpass
 import hashlib
-import os
-from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
+from typing import cast
 
 # Third-party
 import polars as pl
 
 # Local imports
-from localdm.core.metadata import DatasetMetadata
+from localdm.core.models import ColumnStats, DatasetStats
 
 # -----------------------------
-# Metadata utilities
+# Constants
 # -----------------------------
 
-
-def get_current_username() -> str:
-    """Get current username in a cross-platform manner."""
-    try:
-        return getpass.getuser()
-    except OSError:
-        username: str | None = os.environ.get("USER") or os.environ.get("USERNAME")
-        return username if username else "unknown"
-
-
-def create_metadata(
-    hash_val: str,
-    name: str,
-    tags: list[str],
-    parent_refs: list[str],
-    author: str,
-    transform_type: str | None,
-    transform_metadata: dict[str, object] | None,
-    schema: dict[str, str],
-    stats: dict[str, object],
-    data_path: str,
-) -> DatasetMetadata:
-    """Create DatasetMetadata with current timestamp."""
-    return DatasetMetadata(
-        hash=hash_val,
-        name=name,
-        tags=tags,
-        created_at=datetime.now(UTC).isoformat(),
-        author=author,
-        parent_refs=parent_refs,
-        transform_type=transform_type,
-        transform_metadata=transform_metadata,
-        schema=schema,
-        stats=stats,
-        data_path=data_path,
-    )
-
-
-def extract_transform_type(metadata: dict[str, object] | None) -> str | None:
-    """Extract transform type from metadata dict."""
-    if metadata and "transform" in metadata:
-        transform_val = metadata["transform"]
-        return str(transform_val) if transform_val is not None else None
-    return None
-
-
-def get_parent_ref_by_name(parent_refs: list[str], name: str) -> str:
-    """Find parent reference by dataset name."""
-    for ref in parent_refs:
-        if ref.startswith((f"{name}:", f"{name}@")):
-            return ref
-    msg = f"Parent '{name}' not found"
-    raise KeyError(msg)
-
+APPROX_UNIQUE_THRESHOLD = 10_000
 
 # -----------------------------
 # File I/O utilities
@@ -143,9 +88,38 @@ def extract_schema(df: pl.DataFrame) -> dict[str, str]:
     return {col: str(dtype) for col, dtype in df.schema.items()}
 
 
-def compute_stats(df: pl.DataFrame) -> dict[str, object]:
-    """Compute statistics for Polars DataFrame."""
+def compute_stats(df: pl.DataFrame) -> DatasetStats:
+    """Compute enhanced statistics for Polars DataFrame.
+
+    Returns:
+        DatasetStats with:
+        - row_count: Total number of rows
+        - column_count: Total number of columns
+        - column_stats: Per-column statistics (null %, unique count)
+    """
+    column_stats: dict[str, ColumnStats] = {}
+
+    for col in df.columns:
+        null_count: int = df[col].null_count()
+        null_percentage: float = (
+            (null_count / df.height * 100) if df.height > 0 else 0.0
+        )
+
+        # Unique count (use approx for large datasets)
+        if df.height > APPROX_UNIQUE_THRESHOLD:
+            approx_val = df[col].approx_n_unique()
+            unique_count: int = cast("int", approx_val) if approx_val is not None else 0
+        else:
+            unique_count = df[col].n_unique()
+
+        column_stats[col] = {
+            "null_count": null_count,
+            "null_percentage": null_percentage,
+            "unique_count": unique_count,
+        }
+
     return {
-        "row_count": len(df),
+        "row_count": df.height,
         "column_count": len(df.columns),
+        "column_stats": column_stats,
     }

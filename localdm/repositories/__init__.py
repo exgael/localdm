@@ -1,4 +1,5 @@
 # Local imports
-from localdm.repositories.dataset_repository import DatasetRepository
+from localdm.repositories.data_repository import DataRepository, DatasetRepository
+from localdm.repositories.metadata_repository import MetadataRepository
 
-__all__ = ["DatasetRepository"]
+__all__ = ["DataRepository", "DatasetRepository", "MetadataRepository"]
