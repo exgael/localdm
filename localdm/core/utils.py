@@ -61,10 +61,11 @@ def _compute_heuristic_hash(df: pl.DataFrame) -> str:
     components.append(f"schema:{schema}")
 
     # Sample head/tail (only 5 rows each - very cheap)
-    head: str = df.head(5).write_parquet()
-    tail: str = df.tail(5).write_parquet()
-    components.append(f"head:{hashlib.sha256(head.encode()).hexdigest()[:8]}")
-    components.append(f"tail:{hashlib.sha256(tail.encode()).hexdigest()[:8]}")
+    head_bytes = parquet_bytes(df.head(5))
+    tail_bytes = parquet_bytes(df.tail(5))
+
+    components.append(f"head:{hashlib.sha256(head_bytes).hexdigest()[:8]}")
+    components.append(f"tail:{hashlib.sha256(tail_bytes).hexdigest()[:8]}")
 
     combined = "|".join(components)
     return hashlib.sha256(combined.encode()).hexdigest()
