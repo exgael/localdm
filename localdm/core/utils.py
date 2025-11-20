@@ -2,7 +2,6 @@
 import hashlib
 from io import BytesIO
 from pathlib import Path
-from typing import cast
 
 # Third-party
 import polars as pl
@@ -67,13 +66,13 @@ def _compute_heuristic_hash(df: pl.DataFrame) -> str:
         return buffer.getvalue()
 
     # Sample head/tail (only 5 rows each - very cheap)
-    head_bytes = parquet_bytes(df.head(5))
-    tail_bytes = parquet_bytes(df.tail(5))
+    head_bytes: bytes = parquet_bytes(df.head(5))
+    tail_bytes: bytes = parquet_bytes(df.tail(5))
 
     components.append(f"head:{hashlib.sha256(head_bytes).hexdigest()[:8]}")
     components.append(f"tail:{hashlib.sha256(tail_bytes).hexdigest()[:8]}")
 
-    combined = "|".join(components)
+    combined: str = "|".join(components)
     return hashlib.sha256(combined.encode()).hexdigest()
 
 
@@ -106,38 +105,17 @@ def compute_stats(df: pl.DataFrame) -> DatasetStats:
     """
     column_stats: dict[str, ColumnStats] = {}
 
-    # Dtypes that support approx_n_unique
-    APPROX_SUPPORTED = {
-        pl.Int8, pl.Int16, pl.Int32, pl.Int64,
-        pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
-        pl.Float32, pl.Float64,
-        pl.Boolean,
-        pl.String,
-    }
-
     for col in df.columns:
-        series = df[col]
-        col_dtype = series.dtype
+        s: pl.Series = df[col]
 
-        null_count: int = series.null_count()
-        null_percentage: float = (
-            (null_count / df.height * 100) if df.height > 0 else 0.0
-        )
-
-        # Unique count with safe approx fallback
-        if (
-            df.height > APPROX_UNIQUE_THRESHOLD
-            and col_dtype in APPROX_SUPPORTED
-        ):
-            approx_val = series.approx_n_unique()
-            unique_count: int = int(approx_val) if approx_val is not None else 0
-        else:
-            unique_count = series.n_unique()
+        null_count: int = s.null_count()
+        null_pct: float = (null_count / df.height * 100) if df.height else 0.0
+        uniq: int = s.n_unique()
 
         column_stats[col] = {
             "null_count": null_count,
-            "null_percentage": null_percentage,
-            "unique_count": unique_count,
+            "null_percentage": null_pct,
+            "unique_count": uniq,
         }
 
     return {
