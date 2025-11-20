@@ -179,7 +179,7 @@ class DisplayService:
                     unique_str = f"{unique:,}"
                     sections.append(
                         f"  {col_name} ({dtype}): {unique_str} unique, "
-                        f"[{color}]{null_pct:.1f}% null[/]"
+                        f"[{color}]{null_pct:.5f}% null[/]"
                     )
 
         # Schema (more compact if we already showed column details)
