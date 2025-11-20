@@ -72,9 +72,24 @@ class DataManager:
         metadata: DatasetMetadata = self._metadata_repo.load(dataset_id)
         return self._data_repo.load_data(metadata.hash)
     
-    def list_datasets(self) -> list[DatasetMetadata]:
-        """List all datasets in the repository."""
-        return self._metadata_repo.list_datasets()
+    def list_datasets(        
+        self,
+        name_filter: str | None = None,
+        tag_filter: str | None = None,
+    ) -> list[DatasetMetadata]:
+        """Get all datasets with optional filtering.
+
+        Args:
+            name_filter: Optional name pattern to filter by
+            tag_filter: Optional tag to filter by (exact match)
+
+        Returns:
+            List of DatasetMetadata objects
+        """
+        return self._metadata_repo.list_datasets(
+            name_filter=name_filter,
+            tag_filter=tag_filter,
+        )
 
     # -----------------------------
     # Dataset Creation
@@ -249,24 +264,13 @@ class DataManager:
         """
         self._display_service.show_dataset_info(dataset_id)
 
-    def view_datasets(
-        self,
-        name_filter: str | None = None,
-        tag_filter: str | None = None,
-    ) -> list[DatasetMetadata]:
-        """Get all datasets with optional filtering.
+    def show_all(self, name_filter: str | None = None) -> None:
+        """Display all datasets in a rich table.
 
         Args:
             name_filter: Optional name pattern to filter by
-            tag_filter: Optional tag to filter by (exact match)
-
-        Returns:
-            List of DatasetMetadata objects
         """
-        return self._metadata_repo.list_datasets(
-            name_filter=name_filter,
-            tag_filter=tag_filter,
-        )
+        self._display_service.show_datasets_table(name_filter=name_filter)
 
     def visualize_lineage(self, dataset_id: str, max_depth: int = 5) -> None:
         """Display lineage tree for a dataset.
@@ -276,3 +280,4 @@ class DataManager:
             max_depth: Maximum depth to traverse
         """
         self._display_service.visualize_lineage_tree(dataset_id, max_depth)
+
