@@ -192,34 +192,6 @@ class MetadataRepository:
         finally:
             conn.close()
 
-    def load_by_hash(self, hash_val: str) -> DatasetMetadata:
-        """Load dataset metadata by hash (convenience method).
-
-        Args:
-            hash_val: Dataset content hash
-
-        Returns:
-            DatasetMetadata
-
-        Raises:
-            KeyError: If dataset not found
-        """
-        conn: sqlite3.Connection = sqlite3.connect(self.db_path)
-        try:
-            cursor: sqlite3.Cursor = conn.execute(
-                "SELECT id FROM datasets WHERE hash = ?",
-                (hash_val,),
-            )
-            row: Any = cursor.fetchone()
-            if not row:
-                msg = f"Dataset with hash '{hash_val}' not found"
-                raise KeyError(msg)
-            dataset_id: str = row[0]
-        finally:
-            conn.close()
-
-        return self.load(dataset_id)
-
     def resolve_ref_to_id(self, ref: str) -> str:
         """Resolve dataset reference to ID.
 
@@ -288,19 +260,6 @@ class MetadataRepository:
 
         msg = f"Invalid reference '{ref}'. Use 'name:tag', 'name@hash', or ID format."
         raise ValueError(msg)
-
-    def resolve_ref_to_hash(self, ref: str) -> str:
-        """Resolve dataset reference to hash (legacy method).
-
-        Args:
-            ref: Reference string
-
-        Returns:
-            Content hash
-        """
-        dataset_id: str = self.resolve_ref_to_id(ref)
-        metadata: DatasetMetadata = self.load(dataset_id)
-        return metadata.hash
 
     def list_all_refs(self) -> list[str]:
         """List all dataset references in database."""
@@ -527,9 +486,3 @@ class MetadataRepository:
             conn.close()
 
         return [self.load(child_id) for child_id in child_ids]
-
-    # -----------------------------
-    # Private Helpers
-    # -----------------------------
-
-    # NOTE: _hash_to_ref removed - no longer needed with ID-based system
