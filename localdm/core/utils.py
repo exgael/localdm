@@ -62,7 +62,7 @@ def _compute_heuristic_hash(df: pl.DataFrame) -> str:
 
     # Helper to get parquet bytes
     def parquet_bytes(subdf: pl.DataFrame) -> bytes:
-        buffer = io.BytesIO()
+        buffer = BytesIO()
         subdf.write_parquet(buffer)
         return buffer.getvalue()
 
