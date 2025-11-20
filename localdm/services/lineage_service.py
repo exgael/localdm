@@ -129,8 +129,10 @@ class LineageService:
         if immediate_parent_metas:
             if roots:
                 lines.append("    [dim]↓[/]")
-            for parent_meta in immediate_parent_metas:
-                lines.append(f"  [white]{parent_meta.ref}[/]")
+            lines.extend(
+                f"  [white]{parent_meta.ref}[/]"
+                for parent_meta in immediate_parent_metas
+            )
 
         # Display current dataset
         if metadata.parent_refs:
