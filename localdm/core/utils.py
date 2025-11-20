@@ -60,6 +60,12 @@ def _compute_heuristic_hash(df: pl.DataFrame) -> str:
     )
     components.append(f"schema:{schema}")
 
+    # Helper to get parquet bytes
+    def parquet_bytes(subdf: pl.DataFrame) -> bytes:
+        buffer = io.BytesIO()
+        subdf.write_parquet(buffer)
+        return buffer.getvalue()
+
     # Sample head/tail (only 5 rows each - very cheap)
     head_bytes = parquet_bytes(df.head(5))
     tail_bytes = parquet_bytes(df.tail(5))
