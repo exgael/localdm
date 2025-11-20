@@ -104,10 +104,7 @@ lazy_df = dm.get(ref)          # Returns Polars LazyFrame
 df = dm.get(ref).collect()     # Materialize data
 ```
 
-References can be:
-- `"name:tag"` - by tag
-- `"name@hash"` - by hash prefix
-- Dataset ID (UUID)
+References is the Dataset ID (UUID)
 
 ### List Datasets
 
