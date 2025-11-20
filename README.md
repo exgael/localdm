@@ -1,10 +1,8 @@
 # LocalDM
 
-Memory-efficient, type-safe data versioning library with lineage tracking using Polars.
+Type-safe data versioning library with lineage tracking using Polars.
 
 ## Installation
-
-### From GitHub
 
 ```bash
 uv add git+https://github.com/exgael/localdm.git
@@ -19,132 +17,136 @@ import polars as pl
 # Initialize data manager
 dm = DataManager(repo_path="./.localdm")
 
-# Load data yourself with Polars
+# Load data with Polars
 users_df = pl.read_csv("users.csv")
 
-# Create a versioned dataset (author auto-detected)
-users = dm.create_dataset(
+# Create a versioned dataset (returns reference string)
+users_ref = dm.create_dataset(
     name="users",
     data=users_df,
     tag="v1"
 )
 
-# Work with data - users.df returns a LazyFrame (no data loaded yet!)
-lazy = users.df
+# Get dataset as LazyFrame
+lazy = dm.get(users_ref)
 result = lazy.filter(pl.col("age") >= 30).select(["name", "age"]).collect()
 
-# Create a derived dataset with lineage tracking
-adults_df = users_df.filter(pl.col("age") >= 30).collect()
-adults = dm.create_dataset(
+# Create derived dataset with lineage
+adults_ref = dm.create_dataset(
     name="adults",
-    data=adults_df,
+    data=result,
     tag="v1",
-    parents=[users],
-    metadata={"transform": "age_filter", "threshold": 30}
+    parents=[users_ref],
+    description="Users age >= 30"
 )
 
-# Retrieve datasets by reference
-users_v1 = dm.get("users:v1")
-
-# Access data lazily - only loads when you call .collect()
-lazy_df = users_v1.df
-materialized = lazy_df.collect()
-
-# Discovery & visualization (with rich formatting)
-dm.show_datasets()              # Pretty table of all datasets
-dm.describe("users:v1")         # Detailed panel view
-dm.visualize_lineage("adults:v1")  # Tree view of dependencies
-users.info()                    # Dataset overview
+# Display datasets
+dm.show_all()                    # Table of all datasets
+dm.show(users_ref)               # Detailed info panel
+dm.visualize_lineage(adults_ref) # Lineage tree
 ```
 
-## Core Concepts
+## API Reference
 
-### DataManager
-
-Central manager for creating and retrieving versioned datasets.
+### Initialize
 
 ```python
 dm = DataManager(repo_path="./.localdm")
 ```
 
-**Key Methods:**
-- `create_dataset(name, data, tag=None, parents=None, metadata=None, author=None)` - Version a Polars DataFrame
-- `get(ref)` - Retrieve dataset by reference
-- `list_datasets(name_filter=None, limit=None)` - List datasets programmatically
-- `show_datasets(name_filter=None)` - Display datasets in a rich table
-- `describe(ref)` - Show detailed info panel for a dataset
-- `visualize_lineage(ref, max_depth=5)` - Display parent dependency tree
+Creates or connects to a LocalDM repository.
 
-### Dataset
-
-Immutable dataset reference with metadata and lazy data access.
+### Create Datasets
 
 ```python
-# Access data lazily (returns LazyFrame)
-lazy_df = dataset.df
-
-# Chain operations without loading data
-result = dataset.df.filter(...).select(...).collect()
-
-# Or load everything at once
-df = dataset.df.collect()
-
-# Display information
-dataset.info()  # Rich formatted overview with schema
-```
-
-### Lineage Tracking
-
-Track relationships between datasets:
-
-```python
-# Create dataset with parents
-derived = dm.create_dataset(
-    name="derived",
-    data=result_df,
-    parents=[dataset1, dataset2],
-    metadata={"transform": "join"}
+ref = dm.create_dataset(
+    name="dataset_name",
+    data=df,                    # Polars DataFrame
+    tag="v1",                   # Optional: tag for this version
+    parents=["parent:v1"],      # Optional: parent references for lineage
+    description="...",          # Optional: dataset description
+    author="username"           # Optional: defaults to system username
 )
-
-# Visualize lineage tree
-dm.visualize_lineage("derived:v1")
-
-# Get specific parent
-parent = dataset.get_parent("parent_name", dm.repository)
-
-# Get all parents
-parents = dataset.get_parents(dm.repository)
 ```
 
-### References
+Returns a reference string (e.g., `"users:v1"`).
 
-Datasets can be referenced by `name:tag` or `name@hash`:
+### Derive from Existing Dataset
 
 ```python
-dm.get("users:v1")           # By tag
-dm.get("users@abc123...")    # By hash (first 7 chars)
+ref = dm.derive_dataset(
+    source_ref="users:v1",
+    data=transformed_df,
+    name="new_name",            # Optional: defaults to source name
+    tag="v2",                   # Optional
+    description="..."           # Optional
+)
 ```
 
-### Discovery & Inspection
+Automatically sets the source as parent.
 
-Browse and inspect datasets with rich formatting:
+### Update Dataset
 
 ```python
-# List all datasets
-datasets = dm.list_datasets()
-filtered = dm.list_datasets(name_filter="user", limit=10)
+dm.update_dataset(
+    dataset_id=meta.id,
+    data=new_df,
+    description="..."           # Optional
+)
+```
 
-# Pretty table view
-dm.show_datasets()
+Replaces data while preserving ID, tags, and lineage.
 
-# Detailed panel view
-dm.describe("users:v1")
+### Get Data
 
-# Dataset overview
-dataset.info()
+```python
+lazy_df = dm.get(ref)          # Returns Polars LazyFrame
+df = dm.get(ref).collect()     # Materialize data
+```
 
-# Lineage tree
-dm.visualize_lineage("derived:v2")
+References can be:
+- `"name:tag"` - by tag
+- `"name@hash"` - by hash prefix
+- Dataset ID (UUID)
+
+### List Datasets
+
+```python
+all_datasets = dm.list_datasets()
+filtered = dm.list_datasets(name_filter="user", tag_filter="v1")
+```
+
+Returns list of `DatasetMetadata` objects.
+
+### Display
+
+```python
+dm.show_all()                  # Rich table of all datasets
+dm.show_all(name_filter="user")
+
+dm.show(ref)                   # Detailed panel for one dataset
+dm.visualize_lineage(ref)      # Parent dependency tree
+dm.tree()                      # Full repository lineage tree
+```
+
+### Metadata Operations
+
+```python
+# Tags
+dm.add_tag(dataset_id, "new_tag")
+dm.remove_tag(dataset_id, "old_tag")
+dm.list_tags(dataset_id)       # Returns [(tag, created_at), ...]
+
+# Update metadata
+dm.update_name(dataset_id, "new_name")
+dm.update_description(dataset_id, "new description")
+```
+
+### Delete
+
+```python
+dm.delete(dataset_id)          # Warns if dataset has children
+dm.delete(dataset_id, force=True)  # Force delete
 ```
 
 ## License
