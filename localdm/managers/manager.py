@@ -289,6 +289,10 @@ class DataManager:
         """
         self._display_service.show_datasets_table(name_filter=name_filter)
 
+    def tree(self) -> None:
+        """Render a full dataset lineage tree."""
+        self._display_service.show_tree()
+
     def visualize_lineage(self, dataset_id: str, max_depth: int = 5) -> None:
         """Display lineage tree for a dataset.
 

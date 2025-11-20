@@ -39,6 +39,45 @@ class DisplayService:
     # Display Operations
     # -----------------------------
 
+    def show_tree(self) -> None:
+        """Render a full dataset lineage tree."""
+        root: Tree = Tree("[bold cyan]Datasets[/]")
+
+        # Load all metadata
+        all_meta: dict[str, DatasetMetadata] = {
+            meta.ref: meta
+            for meta in self.metadata_repo.list_datasets()
+        }
+
+        # parent → children
+        children: dict[str, list[str]] = {}
+        for meta in all_meta.values():
+            for parent in meta.parent_refs or []:
+                children.setdefault(parent, []).append(meta.ref)
+
+        # roots = datasets without parents
+        root_refs: list[str] = [
+            ref for ref, meta in all_meta.items()
+            if not meta.parent_refs
+        ]
+
+        def fmt(meta: DatasetMetadata) -> str:
+            tags: str = f"[{', '.join(meta.tags)}]" if meta.tags else ""
+            date: str = meta.created_at.split("T")[0]
+            return f"[green]{meta.name}[/]  {tags}   id={meta.id}   {date}"
+
+        def add_subtree(node: Tree, ref: str) -> None:
+            meta: DatasetMetadata = all_meta[ref]
+            sub: Tree = node.add(fmt(meta))
+            for child_ref in sorted(children.get(ref, [])):
+                add_subtree(sub, child_ref)
+
+        for ref in sorted(root_refs):
+            add_subtree(root, ref)
+
+        self.console.print(root)
+
+
     def show_dataset_info(self, ref: str) -> None:
         """Display comprehensive information about a dataset.
 
