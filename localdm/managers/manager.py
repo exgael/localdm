@@ -20,8 +20,7 @@ from localdm.services.lineage_service import LineageService
 
 
 class DataManager:
-    """Data manager - single API surface for dataset operations.
-    """
+    """Data manager - single API surface for dataset operations."""
 
     def __init__(self, repo_path: str | Path | None = None) -> None:
         if repo_path is None:
@@ -71,8 +70,8 @@ class DataManager:
         """
         metadata: DatasetMetadata = self._metadata_repo.load(dataset_id)
         return self._data_repo.load_data(metadata.hash)
-    
-    def list_datasets(        
+
+    def list_datasets(
         self,
         name_filter: str | None = None,
         tag_filter: str | None = None,
@@ -220,8 +219,26 @@ class DataManager:
         self._metadata_repo.delete_metadata(dataset_id)
 
     # -----------------------------
-    # Tags
+    # Metadata Operations
     # -----------------------------
+
+    def update_name(self, dataset_id: str, new_name: str) -> None:
+        """Update the name of an existing dataset.
+
+        Args:
+            dataset_id: Dataset UUID
+            new_name: New name for the dataset
+        """
+        self._metadata_repo.update_name(dataset_id, new_name)
+
+    def update_description(self, dataset_id: str, new_description: str) -> None:
+        """Update the description of an existing dataset.
+
+        Args:
+            dataset_id: Dataset UUID
+            new_description: New description text
+        """
+        self._metadata_repo.update_description(dataset_id, new_description)
 
     def add_tag(self, dataset_id: str, tag: str) -> None:
         """Add a tag to an existing dataset.
@@ -280,4 +297,3 @@ class DataManager:
             max_depth: Maximum depth to traverse
         """
         self._display_service.visualize_lineage_tree(dataset_id, max_depth)
-

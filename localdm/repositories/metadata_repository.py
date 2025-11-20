@@ -334,6 +334,48 @@ class MetadataRepository:
             conn.close()
 
     # -----------------------------
+    # Name update
+    # -----------------------------
+
+    def update_name(self, dataset_id: str, new_name: str) -> None:
+        """Update dataset name.
+
+        Args:
+            dataset_id: Dataset UUID
+            new_name: New dataset name
+        """
+        conn: sqlite3.Connection = sqlite3.connect(self.db_path)
+        try:
+            conn.execute(
+                "UPDATE datasets SET name = ? WHERE id = ?",
+                (new_name, dataset_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    # -----------------------------
+    # Description update
+    # -----------------------------
+
+    def update_description(self, dataset_id: str, new_description: str) -> None:
+        """Update dataset description.
+
+        Args:
+            dataset_id: Dataset UUID
+            new_description: New description text
+        """
+        conn: sqlite3.Connection = sqlite3.connect(self.db_path)
+        try:
+            conn.execute(
+                "UPDATE datasets SET description = ? WHERE id = ?",
+                (new_description, dataset_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    # -----------------------------
     # Tag Operations
     # -----------------------------
 
