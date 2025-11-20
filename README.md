@@ -63,7 +63,7 @@ ref = dm.create_dataset(
     name="dataset_name",
     data=df,                    # Polars DataFrame
     tag="v1",                   # Optional: tag for this version
-    parents=["parent:v1"],      # Optional: parent references for lineage
+    parents=["id_000000"],      # Optional: parent references for lineage
     description="...",          # Optional: dataset description
     author="username"           # Optional: defaults to system username
 )
@@ -75,7 +75,7 @@ Returns a reference string (e.g., `"users:v1"`).
 
 ```python
 ref = dm.derive_dataset(
-    source_ref="users:v1",
+    source_ref="id_000000",
     data=transformed_df,
     name="new_name",            # Optional: defaults to source name
     tag="v2",                   # Optional
