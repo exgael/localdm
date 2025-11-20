@@ -45,8 +45,7 @@ class DisplayService:
 
         # Load all metadata
         all_meta: dict[str, DatasetMetadata] = {
-            meta.ref: meta
-            for meta in self.metadata_repo.list_datasets()
+            meta.ref: meta for meta in self.metadata_repo.list_datasets()
         }
 
         # parent → children
@@ -57,8 +56,7 @@ class DisplayService:
 
         # roots = datasets without parents
         root_refs: list[str] = [
-            ref for ref, meta in all_meta.items()
-            if not meta.parent_refs
+            ref for ref, meta in all_meta.items() if not meta.parent_refs
         ]
 
         def fmt(meta: DatasetMetadata) -> str:
@@ -76,7 +74,6 @@ class DisplayService:
             add_subtree(root, ref)
 
         self.console.print(root)
-
 
     def show_dataset_info(self, ref: str) -> None:
         """Display comprehensive information about a dataset.
